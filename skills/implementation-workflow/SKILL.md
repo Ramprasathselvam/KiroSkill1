@@ -195,12 +195,34 @@ Only during the explicit review/PR progression:
 
 When the user explicitly requests PR creation:
 
-- Confirm the ticket branch exists and contains the intended changes.
+### Mandatory pre-PR checks
+
+Before creating the pull request, the workflow **must** check the implementation for test failures and lint warnings/errors.
+
+1. Confirm the ticket branch contains only the intended changes.
+2. Identify the project's actual build, test, and lint commands from repository configuration and conventions.
+3. Build the relevant iOS target/scheme when required to establish that the code compiles.
+4. Run the relevant unit tests and UI tests when applicable.
+5. Run the configured lint/static-analysis checks (for example SwiftLint or the project's equivalent) when present.
+6. Inspect the command output for both failures and warnings.
+7. Treat **any test failure, lint error, or lint warning as a PR blocker** unless the repository explicitly documents that the warning is intentionally allowed/ignored.
+8. Do not create or push a pull request while any blocking test failure or lint warning/error remains.
+9. Report the exact failing test, lint warning/error, command, and affected file/line when available.
+10. Fix the issue and re-run the affected checks before attempting PR creation again.
+
+A successful build alone is not sufficient for PR creation. The required tests and lint checks must also pass without blocking warnings/errors.
+
+### PR creation gate
+
+Only after all mandatory pre-PR checks pass:
+
 - Commit only relevant implementation and test changes.
 - Push the ticket branch.
 - Create a pull request against the project's normal base branch.
 - Use a Jira-linked PR title, for example `NCAPP-4521: <Jira title>`.
 - Include Jira, summary, Figma, implementation details, screenshot evidence, and actual validation results in the PR description.
+
+If a required test or lint check cannot be run because the required tooling/environment is unavailable, **do not create the PR**. Report the blocked check and why it could not be verified.
 
 ## 11. Code review gate
 
@@ -238,6 +260,8 @@ Only during the explicit completion command:
 - Never move a ticket forward after failed required validation.
 - Never create fake screenshots or claim a screenshot was uploaded without successfully performing the upload.
 - Never create fake proof or claim a test passed without running it.
+- Never create a PR when a required test has failed or a blocking lint warning/error is present.
+- Never create a PR when required build/test/lint tooling is unavailable and the check cannot be verified.
 - Never expose or commit credentials.
 - If Jira transition names differ from `To Do`, `In Progress`, `In Review`, and `Done`, inspect the actual available transitions and map them safely.
-- If a required Jira, Figma, GitHub, simulator, build, or test operation is unavailable, report the exact blocked step instead of pretending it succeeded.
+- If a required Jira, Figma, GitHub, simulator, build, test, or lint operation is unavailable, report the exact blocked step instead of pretending it succeeded.
