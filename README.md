@@ -14,9 +14,9 @@ Use this to implement a Jira ticket and then stop:
 Implement NCAPP-4521
 ```
 
-Before changing code, the Power fetches the Jira issue, checks its status, and moves `To Do` → `In Progress` when needed. It then discovers the linked Figma design and existing iOS architecture, implements the ticket, and stops.
+Before changing code, the Power fetches the Jira issue, checks its status, and moves `To Do` → `In Progress` when needed. It then creates or reuses the appropriate ticket branch, discovers the linked Figma design and existing iOS architecture, implements the ticket, captures simulator evidence, uploads the screenshot to Jira, adds an implementation comment, and stops.
 
-It does **not** automatically validate, move Jira to `In Review`, create a pull request, review the PR, or move Jira to `Done`.
+It does **not** automatically run the full validation gate, move Jira to `In Review`, create a pull request, review the PR, or move Jira to `Done`.
 
 ### Supported commands
 
@@ -30,7 +30,22 @@ Implement NCAPP-4521
 
 Implementation-only workflow:
 
-`Jira status → To Do to In Progress → branch → Jira/Figma discovery → iOS implementation → STOP`
+`Jira status → To Do to In Progress → branch → Jira/Figma discovery → iOS implementation → Simulator screenshot → Jira evidence/comment → STOP`
+
+During implementation, the Power should:
+
+- Move a `To Do` ticket to `In Progress` before modifying code.
+- Determine whether the ticket is a Feature or Bug.
+- Create or reuse the correct ticket branch.
+- Inspect the linked Figma design and existing iOS architecture.
+- Implement the requested change without unrelated refactoring.
+- Run the implemented feature in the iOS Simulator when simulator access is available.
+- Capture a relevant simulator screenshot as evidence.
+- Upload the actual screenshot to the Jira issue and reference it in the implementation comment.
+- Add an evidence-based implementation comment to Jira.
+- Stop after these implementation steps.
+
+If simulator execution or Jira attachment upload is unavailable, the Power must report the blocked evidence step and must not claim that a screenshot was captured or uploaded.
 
 #### 2. Validate an implementation
 
@@ -121,7 +136,8 @@ Complete NCAPP-4521
 The Power must not advance a Jira issue simply because code was generated.
 
 - `To Do` must become `In Progress` before implementation begins.
-- Implementation command stops after implementation.
+- Implementation includes simulator screenshot evidence and a Jira implementation comment, then stops.
+- Screenshot evidence must be real and uploaded to the Jira issue; never fabricate or merely name an attachment that was not uploaded.
 - Failed required validation blocks the move to `In Review`.
 - Blocking code-review findings block completion.
 - Do not fabricate screenshots, logs, test results, Jira proof, or review outcomes.
@@ -173,4 +189,4 @@ This repository is intentionally generic. For a specific iOS codebase, add proje
 
 ## Recommended workflow
 
-The Power separates discovery from implementation. Kiro should inspect Jira, Figma, and the existing codebase first, create or reuse the appropriate ticket branch, and then implement the change. The implementation command stops there. Validation, PR creation, code review, and Jira completion are explicit later stages and must respect their gates.
+The Power separates discovery, implementation evidence, validation, pull request creation, code review, and completion. Kiro should inspect Jira, Figma, and the existing codebase first, create or reuse the appropriate ticket branch, implement the change, capture and upload simulator evidence to Jira, add the implementation comment, and then stop. Validation, PR creation, code review, and Jira completion are explicit later stages and must respect their gates.
