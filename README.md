@@ -4,7 +4,7 @@ A reusable Kiro Power for implementing iOS features from Jira requirements and F
 
 ## What it does
 
-The Power supports implementation-first work and explicit follow-up commands for validation, pull requests, review, and completion.
+The Power supports implementation-first work and explicit follow-up commands for test-case generation, validation, pull requests, review, and completion.
 
 ### Primary command
 
@@ -47,23 +47,41 @@ During implementation, the Power should:
 
 If simulator execution or Jira attachment upload is unavailable, the Power must report the blocked evidence step and must not claim that a screenshot was captured or uploaded.
 
-#### 2. Validate an implementation
+#### 2. Generate test cases
+
+```text
+Generate test cases for NCAPP-4521
+```
+
+Generates test cases from the Jira requirements, acceptance criteria, Figma design, existing implementation, and repository test conventions. Cases cover applicable happy paths, boundaries, empty/loading/success/error states, navigation, state changes, API behavior, localization, accessibility, and regression scenarios.
+
+#### 3. Validate an implementation
 
 ```text
 Validate NCAPP-4521
 ```
 
-Runs the applicable build, unit/UI tests, Jira acceptance-criteria checks, navigation/state checks, localization/accessibility checks, and Figma validation.
+Runs the applicable build, unit/UI tests, Jira acceptance-criteria checks, navigation/state checks, localization/accessibility checks, Figma validation, and configured lint checks.
 
-#### 3. Create a pull request
+Validation must report exact failures and must never fabricate test or lint results.
+
+#### 4. Generate and validate test cases
+
+```text
+Generate and validate test cases for NCAPP-4521
+```
+
+Generates the relevant test cases, implements automated tests when requested/appropriate, runs the applicable validation, and reports the evidence and blockers.
+
+#### 5. Create a pull request
 
 ```text
 Create PR for NCAPP-4521
 ```
 
-Creates or uses the ticket branch, commits/pushes the intended changes when permitted, creates the GitHub PR, and links the PR to Jira.
+Before creating the PR, the workflow must run the required build, relevant tests, acceptance-criteria validation, and configured lint checks. **Any required test failure or lint warning/error blocks PR creation.**
 
-#### 4. Review the pull request
+#### 6. Review the pull request
 
 ```text
 Review PR for NCAPP-4521
@@ -71,7 +89,7 @@ Review PR for NCAPP-4521
 
 Reviews the actual GitHub PR diff against Jira acceptance criteria, Figma, architecture, code quality, tests, and validation requirements.
 
-#### 5. Fix review findings
+#### 7. Fix review findings
 
 ```text
 Fix review findings for NCAPP-4521
@@ -79,7 +97,7 @@ Fix review findings for NCAPP-4521
 
 Addresses review findings, then requires validation and another review before completion.
 
-#### 6. Complete the Jira issue
+#### 8. Complete the Jira issue
 
 ```text
 Complete NCAPP-4521
@@ -114,23 +132,6 @@ Rules:
 - Base new branches on the repository's normal development base branch.
 - Do not commit directly to the protected/default branch for ticket work when a ticket branch is required.
 
-### Typical workflow
-
-For implementation:
-
-```text
-Implement NCAPP-4521
-```
-
-Then, only when requested:
-
-```text
-Validate NCAPP-4521
-Create PR for NCAPP-4521
-Review PR for NCAPP-4521
-Complete NCAPP-4521
-```
-
 ## Workflow gates
 
 The Power must not advance a Jira issue simply because code was generated.
@@ -138,7 +139,10 @@ The Power must not advance a Jira issue simply because code was generated.
 - `To Do` must become `In Progress` before implementation begins.
 - Implementation includes simulator screenshot evidence and a Jira implementation comment, then stops.
 - Screenshot evidence must be real and uploaded to the Jira issue; never fabricate or merely name an attachment that was not uploaded.
+- Test-case generation must be based on Jira acceptance criteria and actual implementation behavior.
+- Validation must execute applicable tests and lint checks and record actual results.
 - Failed required validation blocks the move to `In Review`.
+- Any required test failure or lint warning/error blocks PR creation.
 - Blocking code-review findings block completion.
 - Do not fabricate screenshots, logs, test results, Jira proof, or review outcomes.
 - Respect repository conventions, required human approvals, branch protection, CI, merge policies, and deployment controls.
@@ -161,6 +165,7 @@ The Power must not advance a Jira issue simply because code was generated.
 │   ├── design-system/SKILL.md
 │   ├── validation/SKILL.md
 │   ├── implementation-workflow/SKILL.md
+│   ├── testcase-generation-validation/SKILL.md
 │   └── code-review/SKILL.md
 └── steering/
     ├── workflow.md
@@ -189,4 +194,4 @@ This repository is intentionally generic. For a specific iOS codebase, add proje
 
 ## Recommended workflow
 
-The Power separates discovery, implementation evidence, validation, pull request creation, code review, and completion. Kiro should inspect Jira, Figma, and the existing codebase first, create or reuse the appropriate ticket branch, implement the change, capture and upload simulator evidence to Jira, add the implementation comment, and then stop. Validation, PR creation, code review, and Jira completion are explicit later stages and must respect their gates.
+The Power separates discovery, implementation evidence, test-case generation, validation, pull request creation, code review, and completion. Kiro should inspect Jira, Figma, and the existing codebase first, create or reuse the appropriate ticket branch, implement the change, capture and upload simulator evidence to Jira, add the implementation comment, and then stop. Test cases and validation are explicit stages, and PR creation is blocked by failed required tests or lint warnings/errors.
