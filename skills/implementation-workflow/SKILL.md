@@ -7,6 +7,28 @@ description: Orchestrate Jira-driven iOS implementation and, when explicitly req
 
 Use `Implement <JIRA-KEY>` for implementation-only work. The implementation command must stop after implementation evidence is recorded. Later validation, pull request, review, and completion steps are explicit follow-up commands.
 
+## Permission gates
+
+The workflow uses explicit user approval for impactful lifecycle actions. A permission gate is an interactive stop point: ask a clear Yes/No question in chat and **wait for the user's actual response before taking the gated action**.
+
+Rules:
+
+- Never infer approval from the original command, silence, context, or a previous approval for a different action.
+- Do not perform the gated action until the user explicitly answers `Yes` (or an unambiguous equivalent such as `Y`, `Proceed`, or `Continue`).
+- Treat `No`, `N`, `Cancel`, or `Stop` as rejection and stop that workflow stage.
+- After a rejection, do not retry the same action automatically and do not continue to later lifecycle stages.
+- A single approval applies only to the specific action described in that prompt.
+- Keep the prompt specific about what will happen and the relevant Jira/branch/PR target.
+- Do not present an approval prompt and then continue in the same turn without receiving the user's response.
+
+Suggested prompt format:
+
+```text
+Jira issue KAN-1 is currently To Do.
+I need to move it to In Progress before modifying implementation code.
+Proceed? [Yes/No]
+```
+
 ## Primary implementation command
 
 Example:
@@ -17,7 +39,7 @@ Implement NCAPP-4521
 
 The command performs only:
 
-`Jira status check → branch setup → Figma/discovery → implementation → simulator screenshot evidence → Jira implementation comment → stop`
+`Jira status check → approval for required status transition → branch setup → Figma/discovery → implementation → simulator screenshot evidence → Jira implementation comment → stop`
 
 It must not automatically continue into the full validation gate, Jira `In Review`, pull request creation, code review, or Jira `Done`.
 
@@ -25,9 +47,19 @@ It must not automatically continue into the full validation gate, Jira `In Revie
 
 - Extract the Jira issue key from the request.
 - Fetch the Jira issue and inspect its current status.
-- If the issue is `To Do`, transition it to `In Progress` **before creating or modifying implementation code**.
-- If it is already `In Progress`, continue.
-- If it is in another state, inspect the available Jira transitions and choose the safest valid transition. Do not force an invalid transition.
+- If the issue is `To Do`, **ask for permission before transitioning it to `In Progress`**.
+- Example prompt:
+
+```text
+Jira issue <JIRA-KEY> is currently To Do.
+I need to move it to In Progress before modifying implementation code.
+Proceed? [Yes/No]
+```
+
+- If the user says `Yes`, perform the valid Jira transition and continue.
+- If the user says `No`, stop immediately. Leave the Jira status unchanged and make no implementation code changes.
+- If it is already `In Progress`, continue without asking for the already-satisfied transition.
+- If it is in another state, inspect the available Jira transitions and choose the safest valid transition. If that transition changes workflow state materially, ask for permission before performing it.
 - If the issue is `Done`, stop and ask before changing anything.
 
 ## 2. Branching strategy
@@ -158,7 +190,7 @@ Review PR for NCAPP-4521
 Complete NCAPP-4521
 ```
 
-These commands may advance through the corresponding gates only when their required checks pass.
+These commands may advance through the corresponding gates only when their required checks pass **and any required permission gate is approved**.
 
 ## 8. Validation gate
 
@@ -172,6 +204,8 @@ When the user explicitly requests validation:
 6. Verify loading, success, empty, disabled, and error states when applicable.
 7. Verify localization and accessibility when applicable.
 8. Compare against Figma when Figma tooling is available.
+9. Run configured lint/static-analysis checks when present.
+10. Inspect test/lint output for failures and warnings.
 
 If validation fails:
 
@@ -187,9 +221,10 @@ Never claim validation passed when a required check failed or was not run.
 Only during the explicit review/PR progression:
 
 - Add or update a Jira comment containing an evidence-based implementation and validation summary.
-- Include build, test, acceptance-criteria, Figma, and known-limitation results only when actually verified.
+- Include build, test, acceptance-criteria, Figma, lint, and known-limitation results only when actually verified.
 - Include the pull request URL after the PR exists.
 - Only after successful validation, transition Jira from `In Progress` to `In Review` using the valid Jira transition.
+- If transitioning to `In Review` is a separate user-impacting action in the requested workflow, ask for approval immediately before the transition and wait for the response.
 
 ## 10. Pull request
 
@@ -212,9 +247,26 @@ Before creating the pull request, the workflow **must** check the implementation
 
 A successful build alone is not sufficient for PR creation. The required tests and lint checks must also pass without blocking warnings/errors.
 
-### PR creation gate
+### PR creation permission gate
 
-Only after all mandatory pre-PR checks pass:
+Only after all mandatory pre-PR checks pass, **ask the user for explicit permission before pushing the ticket branch or creating the PR**.
+
+Example:
+
+```text
+Validation passed for <JIRA-KEY>.
+I am ready to push <branch-name> and create the pull request against <base-branch>.
+Proceed? [Yes/No]
+```
+
+- If `Yes`, commit only relevant changes as needed, push the ticket branch, and create the PR.
+- If `No`, stop PR creation and leave the branch/working state unchanged except for any already-existing local changes.
+- Do not create the PR first and ask permission afterward.
+- Do not treat a prior approval for implementation or validation as approval for PR creation.
+
+### PR creation details
+
+After explicit PR approval:
 
 - Commit only relevant implementation and test changes.
 - Push the ticket branch.
@@ -233,10 +285,25 @@ When the user explicitly requests review:
 - Check Swift/SwiftUI/UIKit architecture consistency.
 - Check state management, lifecycle, networking/data handling, error handling, accessibility/localization, tests, regressions, security/privacy, and Figma deviations.
 
+### Review permission gate
+
+Before performing an external review action such as posting a GitHub review or review comments, ask the user for explicit permission.
+
+Example:
+
+```text
+PR #123 for <JIRA-KEY> is ready for review.
+Do you want me to submit the review/comments to GitHub? [Yes/No]
+```
+
+- If `Yes`, submit the appropriate review action.
+- If `No`, stop before posting the review; report the findings locally without submitting them.
+- Do not interpret the user's request to inspect/review code as permission to publish a GitHub review when this gate applies.
+
 If blocking findings exist:
 
 - Keep Jira in `In Review`.
-- Fix the findings.
+- Fix the findings when explicitly requested/approved.
 - Re-run the required validation.
 - Update the PR.
 - Review again.
@@ -249,18 +316,32 @@ Only during the explicit completion command:
 
 - Confirm final validation state.
 - Confirm the PR meets the configured review requirement.
-- Transition Jira from `In Review` to `Done` using the valid Jira transition.
+- **Ask for explicit permission immediately before moving Jira from `In Review` to `Done`.**
+
+Example:
+
+```text
+Validation and review requirements for <JIRA-KEY> are complete.
+Do you want me to move Jira from In Review to Done? [Yes/No]
+```
+
+- If `Yes`, perform the valid Jira transition.
+- If `No`, leave the issue in its current state and stop.
 - Respect repository policy requiring human review, merge, CI, or deployment.
 
 ## Failure and recovery rules
 
 - Never skip Jira status transitions silently.
 - Never modify implementation code before moving a `To Do` ticket to `In Progress`.
+- Never move `To Do` to `In Progress` without the required explicit user approval.
 - Never create duplicate ticket branches when a matching branch already exists.
 - Never move a ticket forward after failed required validation.
 - Never create fake screenshots or claim a screenshot was uploaded without successfully performing the upload.
 - Never create fake proof or claim a test passed without running it.
 - Never create a PR when a required test has failed or a blocking lint warning/error is present.
+- Never create a PR without the required explicit user approval at the PR creation gate.
+- Never publish a GitHub review without the required explicit user approval at the review gate.
+- Never move Jira to `Done` without the required explicit user approval at the completion gate.
 - Never create a PR when required build/test/lint tooling is unavailable and the check cannot be verified.
 - Never expose or commit credentials.
 - If Jira transition names differ from `To Do`, `In Progress`, `In Review`, and `Done`, inspect the actual available transitions and map them safely.
