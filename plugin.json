@@ -1,0 +1,17 @@
+{
+  "name": "jira-figma-ios",
+  "displayName": "Jira Figma iOS Feature Builder",
+  "description": "Implement iOS features from Jira requirements and linked Figma designs using repository-aware Swift, SwiftUI, and UIKit workflows.",
+  "version": "1.0.0",
+  "keywords": [
+    "jira",
+    "figma",
+    "ios",
+    "swift",
+    "swiftui",
+    "uikit",
+    "feature",
+    "implementation",
+    "design"
+  ]
+}
