@@ -5,7 +5,7 @@ description: Orchestrate Jira-driven iOS implementation and, when explicitly req
 
 # Implementation Workflow
 
-Use `Implement <JIRA-KEY>` for implementation-only work. The implementation command must stop after code implementation. Later validation, pull request, review, and completion steps are explicit follow-up commands.
+Use `Implement <JIRA-KEY>` for implementation-only work. The implementation command must stop after implementation evidence is recorded. Later validation, pull request, review, and completion steps are explicit follow-up commands.
 
 ## Primary implementation command
 
@@ -17,9 +17,9 @@ Implement NCAPP-4521
 
 The command performs only:
 
-`Jira status check → branch setup → Figma/discovery → implementation → stop`
+`Jira status check → branch setup → Figma/discovery → implementation → simulator screenshot evidence → Jira implementation comment → stop`
 
-It must not automatically continue into validation, Jira `In Review`, pull request creation, code review, or Jira `Done`.
+It must not automatically continue into the full validation gate, Jira `In Review`, pull request creation, code review, or Jira `Done`.
 
 ## 1. Start the ticket
 
@@ -87,20 +87,65 @@ For routine feature work, proceed after discovery and planning. Ask for approval
 - Keep Jira status at `In Progress` during implementation.
 - Keep all implementation changes on the ticket branch.
 
-## 6. Stop after implementation
+## 6. Simulator screenshot and Jira evidence
 
-When the user invoked `Implement <JIRA-KEY>`, stop after the implementation work is complete.
+After implementation is complete, capture visual evidence of the implemented screen **without turning this into the full validation workflow**.
+
+### Screenshot rules
+
+- Use the iOS Simulator when a simulator is available.
+- Launch/run the relevant app and navigate to the implemented screen when this can be done reliably.
+- Capture a PNG screenshot using the simulator tooling, for example:
+
+```bash
+xcrun simctl io booted screenshot /tmp/NCAPP-4521.png
+```
+
+- If multiple screens are central to the ticket, capture the minimum useful set of screenshots rather than every screen.
+- Do not claim a screenshot was captured if the simulator is unavailable or the screen could not be reached.
+- Do not fabricate screenshots.
+
+### Jira attachment and comment
+
+- Upload the captured PNG file to the Jira issue using the available Jira attachment-upload capability.
+- The Jira attachment must be uploaded **before** adding the implementation comment so the evidence is already present on the issue.
+- Add an evidence-based Jira implementation comment after the screenshot upload.
+- The comment should reference the uploaded screenshot filename(s) and summarize what was implemented.
+- Do not claim build/test/acceptance/Figma validation passed unless those checks were explicitly run.
+
+Suggested implementation comment:
+
+```markdown
+## Implementation Completed
+
+### Implementation
+- <summary of changes>
+
+### Simulator Evidence
+- <screenshot filename uploaded to Jira>
+
+### Validation
+- Not run as part of implementation-only workflow.
+
+### Branch
+- `<feature/JIRA-KEY-short-description>` or `<bug/JIRA-KEY-short-description>`
+```
+
+If Jira attachment upload is unavailable, keep the issue `In Progress`, report that the screenshot could not be attached, and do not pretend the upload succeeded.
+
+## 7. Stop after implementation
+
+When the user invoked `Implement <JIRA-KEY>`, stop after implementation, screenshot evidence, and Jira implementation evidence are complete.
 
 Do not automatically:
 
 - run the full validation gate,
-- add a Jira completion/proof comment,
 - move Jira to `In Review`,
 - create a pull request,
 - review a pull request,
 - or move Jira to `Done`.
 
-Report what was implemented and the branch used. Do not claim validation passed unless validation was explicitly run.
+Report what was implemented, the branch used, and whether the simulator screenshot was successfully uploaded to Jira.
 
 ## Explicit follow-up commands
 
@@ -115,7 +160,7 @@ Complete NCAPP-4521
 
 These commands may advance through the corresponding gates only when their required checks pass.
 
-## 7. Validation gate
+## 8. Validation gate
 
 When the user explicitly requests validation:
 
@@ -137,40 +182,16 @@ If validation fails:
 
 Never claim validation passed when a required check failed or was not run.
 
-## 8. Jira proof and In Review gate
+## 9. Jira proof and In Review gate
 
 Only during the explicit review/PR progression:
 
-- Add a Jira comment containing an evidence-based implementation and validation summary.
+- Add or update a Jira comment containing an evidence-based implementation and validation summary.
 - Include build, test, acceptance-criteria, Figma, and known-limitation results only when actually verified.
 - Include the pull request URL after the PR exists.
 - Only after successful validation, transition Jira from `In Progress` to `In Review` using the valid Jira transition.
 
-Suggested Jira comment:
-
-```markdown
-## Implementation Completed
-
-### Implementation
-- <summary of changes>
-
-### Validation
-- Build: PASS
-- Unit Tests: PASS
-- UI Tests: PASS / Not applicable
-- Acceptance Criteria: PASS
-- Figma Validation: PASS / Not applicable
-
-### Notes
-- <limitations or relevant notes>
-
-### Pull Request
-- <PR URL>
-```
-
-Do not attach fabricated screenshots, logs, or test results.
-
-## 9. Pull request
+## 10. Pull request
 
 When the user explicitly requests PR creation:
 
@@ -179,9 +200,9 @@ When the user explicitly requests PR creation:
 - Push the ticket branch.
 - Create a pull request against the project's normal base branch.
 - Use a Jira-linked PR title, for example `NCAPP-4521: <Jira title>`.
-- Include Jira, summary, Figma, implementation details, and actual validation results in the PR description.
+- Include Jira, summary, Figma, implementation details, screenshot evidence, and actual validation results in the PR description.
 
-## 10. Code review gate
+## 11. Code review gate
 
 When the user explicitly requests review:
 
@@ -200,7 +221,7 @@ If blocking findings exist:
 
 Do not mark the ticket `Done` while blocking review findings remain.
 
-## 11. Done gate
+## 12. Done gate
 
 Only during the explicit completion command:
 
@@ -215,7 +236,8 @@ Only during the explicit completion command:
 - Never modify implementation code before moving a `To Do` ticket to `In Progress`.
 - Never create duplicate ticket branches when a matching branch already exists.
 - Never move a ticket forward after failed required validation.
+- Never create fake screenshots or claim a screenshot was uploaded without successfully performing the upload.
 - Never create fake proof or claim a test passed without running it.
 - Never expose or commit credentials.
 - If Jira transition names differ from `To Do`, `In Progress`, `In Review`, and `Done`, inspect the actual available transitions and map them safely.
-- If a required Jira, Figma, GitHub, build, or test operation is unavailable, report the exact blocked step instead of pretending it succeeded.
+- If a required Jira, Figma, GitHub, simulator, build, or test operation is unavailable, report the exact blocked step instead of pretending it succeeded.
