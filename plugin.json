@@ -1,8 +1,11 @@
 {
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "jira-figma-ios",
-  "displayName": "Jira Figma iOS Feature Builder",
-  "description": "Implement iOS features from Jira requirements and linked Figma designs using repository-aware Swift, SwiftUI, and UIKit workflows.",
   "version": "1.0.0",
+  "description": "Implement iOS features from Jira requirements and linked Figma designs using repository-aware Swift, SwiftUI, and UIKit workflows.",
+  "author": {
+    "name": "Ramprasathselvam"
+  },
   "keywords": [
     "jira",
     "figma",
@@ -13,5 +16,7 @@
     "feature",
     "implementation",
     "design"
-  ]
+  ],
+  "license": "MIT",
+  "repository": "https://github.com/Ramprasathselvam/KiroSkill1"
 }
